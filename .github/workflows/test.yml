@@ -1,4 +1,4 @@
-name: Spint 8 Project CI
+name: Sprint 8 Project CI
 
 on:
   push:
