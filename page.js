@@ -29,6 +29,8 @@ module.exports = {
         await fromField.setValue(from);
         const toField = await $(this.toField);
         await toField.setValue(to);
+        await expect(fromField).toHaveValue(from);
+        await expect(toField).toHaveValue(to);
         const callATaxiButton = await $(this.callATaxiButton);
         await callATaxiButton.waitForDisplayed();
         await callATaxiButton.click();

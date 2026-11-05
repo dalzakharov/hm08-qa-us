@@ -2,126 +2,159 @@
 const page = require('../../page');
 const helper = require('../../helper');
 
+const fromAddress = 'East 2nd Street, 601';
+const toAddress = '1300 1st St';
+
+// Open Urban Routes and enter addresses
+async function openTaxiOrder() {
+    await browser.url('/');
+    await page.fillAddresses(fromAddress, toAddress);
+}
+
+// Select the Supportive plan
+async function selectSupportivePlan() {
+    const supportivePlan = await $(page.supportivePlan);
+    await supportivePlan.waitForDisplayed();
+    await supportivePlan.click();
+
+    await expect(supportivePlan).toHaveAttributeContaining('class', 'active');
+}
+
+// Enter and confirm the phone number
+async function savePhoneNumber() {
+    const phoneNumber = helper.getPhoneNumber('+1');
+    await page.submitPhoneNumber(phoneNumber);
+
+    await expect(
+        await helper.getElementByText(phoneNumber)
+    ).toBeExisting();
+}
+
+// Add a credit card
+async function addCreditCard() {
+    const paymentMethodButton = await $(page.paymentMethodButton);
+    await paymentMethodButton.waitForClickable();
+    await paymentMethodButton.click();
+
+    const paymentModal = await $('.payment-picker.open');
+    await expect(paymentModal).toBeDisplayed();
+
+    const addCardButton = await $(page.addCardButton);
+    await addCardButton.waitForDisplayed();
+    await addCardButton.click();
+
+    const cardNumberInput = await $(page.cardNumberInput);
+    await cardNumberInput.waitForDisplayed();
+    await cardNumberInput.setValue('1234 5678 9012 3456');
+
+    const cardCvvInput = await $(page.cardCvvInput);
+    await cardCvvInput.waitForDisplayed();
+    await cardCvvInput.setValue('123');
+    await browser.keys('Tab');
+
+    const linkCardButton = await $(page.linkCardButton);
+    await linkCardButton.waitForClickable();
+    await linkCardButton.click();
+
+    const closeCardModalButton = await $(page.closeCardModalButton);
+    await closeCardModalButton.waitForClickable();
+    await closeCardModalButton.click();
+
+    // Verify that Card replaced Cash
+    await expect($('.pp-value-text')).toHaveText('Card');
+}
+
+// Enter a message for the driver
+async function writeDriverMessage() {
+    const driverMessageInput = await $(page.driverMessageInput);
+    await driverMessageInput.waitForDisplayed();
+    await driverMessageInput.setValue('Please wait near the entrance');
+
+    await expect(driverMessageInput).toHaveValue(
+        'Please wait near the entrance'
+    );
+}
+
+// Select blanket and handkerchiefs
+async function orderBlanketAndHandkerchiefs() {
+    const blanketSwitch = await $(page.blanketSwitch);
+
+    if (!(await blanketSwitch.isSelected())) {
+        await blanketSwitch.parentElement().click();
+    }
+
+    await expect(blanketSwitch).toBeSelected();
+}
+
+// Add two ice creams
+async function orderTwoIceCreams() {
+    const iceCreamPlusButton = await $(page.iceCreamPlusButton);
+    await iceCreamPlusButton.waitForClickable();
+    await iceCreamPlusButton.click();
+    await iceCreamPlusButton.click();
+
+    const iceCreamCounter = await $(page.iceCreamCounter);
+    await expect(iceCreamCounter).toHaveText('2');
+}
+
 describe('Create an order', () => {
 
-    it('should open phone number modal', async () => {
-        await browser.url('/');
-        await page.fillAddresses('East 2nd Street, 601', '1300 1st St');
-
-        const phoneNumberButton = await $(page.phoneNumberButton);
-        await phoneNumberButton.waitForDisplayed();
-        await phoneNumberButton.click();
-
-        const phoneNumberModal = await $(page.phoneNumberModal);
-        await expect(phoneNumberModal).toBeDisplayed();
+    it('Setting the addresses', async () => {
+        await openTaxiOrder();
+        // Address values are verified in page.fillAddresses()
     });
 
-    it('should save the phone', async () => {
-        await browser.url('/');
-        await page.fillAddresses('East 2nd Street, 601', '1300 1st St');
-
-        const phoneNumber = helper.getPhoneNumber('+1');
-        await page.submitPhoneNumber(phoneNumber);
-
-        await expect(
-            await helper.getElementByText(phoneNumber)
-        ).toBeExisting();
+    it('Selecting Supportive plan', async () => {
+        await openTaxiOrder();
+        await selectSupportivePlan();
     });
 
-    it('should select Supportive plan, save phone and add card', async () => {
-        await browser.url('/');
-        await page.fillAddresses('East 2nd Street, 601', '1300 1st St');
+    it('Filling in the phone number', async () => {
+        await openTaxiOrder();
+        await savePhoneNumber();
+    });
 
-        // Select Supportive plan
-        const supportivePlan = await $(page.supportivePlan);
-        await supportivePlan.waitForDisplayed();
-        await supportivePlan.click();
+    it('Adding a credit card', async () => {
+        await openTaxiOrder();
+        await savePhoneNumber();
+        await addCreditCard();
+    });
 
-        await expect(supportivePlan).toHaveAttributeContaining(
-            'class',
-            'active'
-        );
+    it('Writing a message for the driver', async () => {
+        await openTaxiOrder();
+        await writeDriverMessage();
+    });
 
-        // Save phone number
-        const phoneNumber = helper.getPhoneNumber('+1');
-        await page.submitPhoneNumber(phoneNumber);
-        await expect(
-            await helper.getElementByText(phoneNumber)
-        ).toBeExisting();
+    it('Ordering a Blanket and handkerchiefs', async () => {
+        await openTaxiOrder();
+        await selectSupportivePlan();
+        await orderBlanketAndHandkerchiefs();
+    });
 
-        // Open payment methods
-        const paymentMethodButton = await $(page.paymentMethodButton);
-        await paymentMethodButton.waitForClickable();
-        await paymentMethodButton.click();
+    it('Ordering 2 Ice creams', async () => {
+        await openTaxiOrder();
+        await selectSupportivePlan();
+        await orderTwoIceCreams();
+    });
 
-        // Wait for payment modal
-        const paymentModal = await $('.payment-picker.open');
-        await expect(paymentModal).toBeDisplayed();
+    it('The car search modal appears', async () => {
+        await openTaxiOrder();
+        await selectSupportivePlan();
+        await savePhoneNumber();
+        await addCreditCard();
+        await writeDriverMessage();
+        await orderBlanketAndHandkerchiefs();
+        await orderTwoIceCreams();
 
-        // Open Add card form
-        const addCardButton = await $(page.addCardButton);
-        await addCardButton.waitForDisplayed();
-        await addCardButton.click();
-
-        // Enter card number
-        const cardNumberInput = await $(page.cardNumberInput);
-        await cardNumberInput.waitForDisplayed();
-        await cardNumberInput.setValue('1234 5678 9012 3456');
-
-        // Enter CVV
-        const cardCvvInput = await $(page.cardCvvInput);
-        await cardCvvInput.waitForDisplayed();
-        await cardCvvInput.setValue('123');
-
-        // Remove focus from CVV
-        await browser.keys('Tab');
-
-        // Link card
-        const linkCardButton = await $(page.linkCardButton);
-        await linkCardButton.waitForClickable();
-        await linkCardButton.click();
-
-        // Close the Add card modal
-        const closeCardModalButton = await $(page.closeCardModalButton);
-        await closeCardModalButton.waitForClickable();
-        await closeCardModalButton.click();
-
-        // Enter a message to the driver
-        const driverMessageInput = await $(page.driverMessageInput);
-        await driverMessageInput.waitForDisplayed();
-        await driverMessageInput.setValue('Please wait near the entrance');
-
-        await expect(driverMessageInput).toHaveValue('Please wait near the entrance');
-
-        // Enable blanket and handkerchiefs
-        const blanketSwitch = await $(page.blanketSwitch);
-
-        if (!(await blanketSwitch.isSelected())) {
-            await blanketSwitch.parentElement().click();
-        }
-        await expect(blanketSwitch).toBeSelected();
-
-        // Add two ice creams
-        const iceCreamPlusButton = await $(page.iceCreamPlusButton);
-        await iceCreamPlusButton.waitForClickable();
-
-        await iceCreamPlusButton.click();
-        await iceCreamPlusButton.click();
-
-        // Verify ice cream quantity
-        const iceCreamCounter = await $(page.iceCreamCounter);
-        await expect(iceCreamCounter).toHaveText('2');
-
-        // Order a taxi
         const orderButton = await $(page.orderButton);
         await orderButton.waitForClickable();
         await expect(orderButton).toHaveTextContaining('Order');
         await orderButton.click();
 
-        // Verify that car search has started
         const carSearchTitle = await $(page.carSearchTitle);
-        await expect(carSearchTitle).toHaveText('Car search', {wait: 10000});
-       
+        await expect(carSearchTitle).toHaveText('Car search', {
+            wait: 10000
         });
+    });
 
 });
